@@ -1,0 +1,70 @@
+# iOS simulator: builds the iPhone app and photographs it, without Apple.
+#
+# A simulator build needs no signing, so no Apple Developer account: GitHub's
+# Mac runner (free for public repositories) builds it, starts it on a
+# simulated iPhone and saves screenshots. Proof that the iOS side compiles and
+# opens, long before there is an account to ship it with.
+name: iOS simulator
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-sim-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate the iOS project
+        run: npx expo prebuild --platform ios
+        env:
+          CI: 1
+
+      - name: Build for the simulator
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace ios/CloudeIDE.xcworkspace -scheme CloudeIDE \
+            -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
+            | tail -n 40
+
+      - name: Start it on an iPhone and take pictures
+        run: |
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)["devices"]
+          phones=[x for r,l in d.items() if "iOS" in r for x in l if x["name"].startswith("iPhone")]
+          pro=[x for x in phones if "Pro" in x["name"] and "Max" not in x["name"]]
+          print((pro or phones)[-1]["udid"])')
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl ui "$DEVICE" appearance dark
+          xcrun simctl install "$DEVICE" build/Build/Products/Release-iphonesimulator/CloudeIDE.app
+          xcrun simctl launch "$DEVICE" com.cloudeide.mobile
+          mkdir -p shots
+          sleep 25
+          xcrun simctl io "$DEVICE" screenshot shots/1-sign-in.png
+          ls -la shots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CloudeIDE-ios-screenshots
+          path: shots/
+          retention-days: 30
