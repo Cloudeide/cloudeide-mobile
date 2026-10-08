@@ -75,8 +75,12 @@ jobs:
           xcrun simctl install "$DEVICE" build/Build/Products/Release-iphonesimulator/CloudeIDE.app
           xcrun simctl launch "$DEVICE" com.cloudeide.mobile
           mkdir -p shots
-          sleep 25
+          # A Release build's first launch on a fresh simulator is slow; an
+          # early picture is only the splash screen.
+          sleep 60
           xcrun simctl io "$DEVICE" screenshot shots/1-sign-in.png
+          sleep 4
+          xcrun simctl io "$DEVICE" screenshot shots/2-sign-in-later.png
           ls -la shots
 
       - uses: actions/upload-artifact@v4
