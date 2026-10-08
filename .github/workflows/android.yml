@@ -14,11 +14,15 @@ name: Android build
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '.github/workflows/ios-*.yml'
+      - '**.md'
   workflow_dispatch:
 
 concurrency:
   group: android-${{ github.ref }}
-  cancel-in-progress: true
+  # A build half-way through finishes; the next one waits its turn.
+  cancel-in-progress: false
 
 jobs:
   apk:
