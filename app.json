@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "CloudeIDE",
+    "slug": "cloudeide-mobile",
+    "version": "0.1.0",
+    "scheme": "cloudeidemobile",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0d0c0b",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d0c0b"
+    },
+    "ios": {
+      "bundleIdentifier": "com.cloudeide.mobile",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.cloudeide.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d0c0b",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#e2b062"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "serverUrl": "https://api.cloudeide.com"
+    }
+  }
+}

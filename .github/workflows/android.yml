@@ -1,0 +1,69 @@
+# Android build: an installable .apk, on every push to main.
+#
+# No Expo account and no Play Store needed. The native project is generated
+# from app.json (expo prebuild) and built with Gradle on GitHub's runner. The
+# .apk is signed with the generated debug key, which is fine for installing on
+# your own phone and not for the Play Store — that needs a real upload key,
+# added later as a secret.
+#
+# To install: Actions → the latest "Android build" run → Artifacts →
+# CloudeIDE-android → unzip → open CloudeIDE.apk on the phone (docs/MOBILE.md
+# §3.2 in the server repository walks through it).
+name: Android build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck and test
+        run: |
+          npx tsc --noEmit
+          npm test
+
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+        env:
+          CI: 1
+
+      # arm64 only: every Android phone sold in the last several years, and
+      # a third of the build time of all four architectures.
+      - name: Build the APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+
+      - name: Name it
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/CloudeIDE.apk
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CloudeIDE-android
+          path: out/CloudeIDE.apk
+          retention-days: 30
